@@ -245,30 +245,27 @@ def nfold_1_2_3_setting_sample(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  measure
 
     bestparamlist = []
     test_set, outer_train_sets = dataset.read_sets(FLAGS) 
-    
+
     ### MODIFIED FOR SINGLE TRAIN AND TEST #####
     train_set = outer_train_sets
     #train_set = [item for sublist in outer_train_sets for item in sublist]
 
     bestparamind, best_param_list, bestperf, all_predictions, all_losses = general_nfold_cv(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  
                                                                                                 measure, runmethod, FLAGS, train_set, test_set)
-    
+
     testperf = all_predictions[bestparamind]##pointer pos 
 
     logging("---FINAL RESULTS-----", FLAGS)
-    logging("best param index = %s" % bestparamind, FLAGS)
+    logging(f"best param index = {bestparamind}", FLAGS)
 
-
-    testperfs = []
-    testloss= []
 
     avgperf = 0.
 
 
     foldperf = all_predictions[bestparamind]
     foldloss = all_losses[bestparamind]
-    testperfs.append(foldperf)
-    testloss.append(foldloss)
+    testperfs = [foldperf]
+    testloss = [foldloss]
     avgperf += foldperf
 
     avgperf = avgperf / 1
@@ -302,8 +299,8 @@ def general_nfold_cv(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  prfmeasure, runme
 
     h = len(paramset1) * len(paramset2) * len(paramset3)
 
-    all_predictions = [0 for y in range(h)] 
-    all_losses = [0 for y in range(h)] 
+    all_predictions = [0 for _ in range(h)]
+    all_losses = [0 for _ in range(h)] 
 
 
     valinds = val_sets
@@ -320,25 +317,19 @@ def general_nfold_cv(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  prfmeasure, runme
     trrows = tr_label_row_inds[labeledinds]
     trcols = tr_label_col_inds[labeledinds]
 
-        #print("trrows", str(trrows), str(len(trrows)))
-        #print("trcols", str(trcols), str(len(trcols)))
-
     XD_train = tr_XD[trrows]
     XT_train = tr_XT[trcols]
 
 
     train_drugs, train_prots,  train_Y = prepare_interaction_pairs(tr_XD, tr_XT, tr_Y, trrows, trcols)
-        
+
     terows = te_label_row_inds[valinds]
     tecols = te_label_col_inds[valinds]
-        #print("terows", str(terows), str(len(terows)))
-        #print("tecols", str(tecols), str(len(tecols)))
-
     val_drugs, val_prots,  val_Y = prepare_interaction_pairs(te_XD, te_XT,  te_Y, terows, tecols)
 
 
     pointer = 0
-       
+
     for param1ind in range(len(paramset1)): #hidden neurons
         param1value = paramset1[param1ind]
         for param2ind in range(len(paramset2)): #learning rate
@@ -353,11 +344,14 @@ def general_nfold_cv(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  prfmeasure, runme
                 callbacks = [EarlyStopping(monitor='val_loss', patience=15)]
 
                 gridres = gridmodel.fit(([np.array(train_drugs),np.array(train_prots) ]), np.array(train_Y), batch_size=batchsz, epochs=epoch,  
-                	shuffle=False ) 
+                	shuffle=False )
                 #validation_data=( ([np.array(val_drugs), np.array(val_prots) ]), np.array(val_Y)), 
 
                 predicted_labels = gridmodel.predict([np.array(val_drugs), np.array(val_prots) ])
-                json.dump(predicted_labels.tolist(), open("predicted_labels_"+str(pointer)+ ".txt", "w"))
+                json.dump(
+                    predicted_labels.tolist(),
+                    open(f"predicted_labels_{str(pointer)}.txt", "w"),
+                )
                 loss, rperf2 = gridmodel.evaluate(([np.array(val_drugs),np.array(val_prots) ]), np.array(val_Y), verbose=0)
                 rperf = prfmeasure(val_Y, predicted_labels)
                 #rperf = rperf[0]
@@ -383,7 +377,7 @@ def general_nfold_cv(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  prfmeasure, runme
     for param1ind in range(len(paramset1)):
             for param2ind in range(len(paramset2)):
                 for param3ind in range(len(paramset3)):
-                
+
                     avgperf = 0.
 
                     foldperf = all_predictions[pointer]
@@ -396,7 +390,7 @@ def general_nfold_cv(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,  prfmeasure, runme
                         best_param_list = [param1ind, param2ind, param3ind]
 
                     pointer +=1
-        
+
     return  bestpointer, best_param_list, bestperf, all_predictions, all_losses
 
 
@@ -418,7 +412,7 @@ def cindex_score(y_true, y_pred):
    
 def plotLoss(history, batchind, epochind, param3ind, foldind):
 
-    figname = "b"+str(batchind) + "_e" + str(epochind) + "_" + str(param3ind) + "_"  + str( foldind) + "_" + str(time.time()) 
+    figname = f"b{str(batchind)}_e{str(epochind)}_{str(param3ind)}_{str(foldind)}_{str(time.time())}"
     plt.figure()
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -486,7 +480,7 @@ def experiment(FLAGS, perfmeasure, deepmethod, foldcount=6): #5-fold cross valid
                       smilen = FLAGS.max_smi_len,
                       need_shuffle = False )
     # set character set size
-    FLAGS.charseqset_size = dataset.charseqset_size 
+    FLAGS.charseqset_size = dataset.charseqset_size
     FLAGS.charsmiset_size = dataset.charsmiset_size 
 
     #XD, XT, Y = dataset.parse_data(fpath = FLAGS.dataset_path)
@@ -522,7 +516,7 @@ def experiment(FLAGS, perfmeasure, deepmethod, foldcount=6): #5-fold cross valid
     S1_avgperf, S1_avgloss, S1_teststd = nfold_1_2_3_setting_sample(tr_XD, tr_XT,  tr_Y, te_XD, te_XT, te_Y,
                                                                      perfmeasure, deepmethod, FLAGS, dataset)
 
-    logging("Setting " + str(FLAGS.problem_type), FLAGS)
+    logging(f"Setting {str(FLAGS.problem_type)}", FLAGS)
     logging("avg_perf = %.5f,  avg_mse = %.5f, std = %.5f" % 
             (S1_avgperf, S1_avgloss, S1_teststd), FLAGS)
 

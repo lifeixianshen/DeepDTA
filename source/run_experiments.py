@@ -243,7 +243,7 @@ def nfold_1_2_3_setting_sample(XD, XT,  Y, label_row_inds, label_col_inds, measu
 
     bestparamlist = []
     test_set, outer_train_sets = dataset.read_sets(FLAGS) 
-    
+
     foldinds = len(outer_train_sets)
 
     test_sets = []
@@ -260,19 +260,19 @@ def nfold_1_2_3_setting_sample(XD, XT,  Y, label_row_inds, label_col_inds, measu
         otherfoldsinds = [item for sublist in otherfolds for item in sublist]
         train_sets.append(otherfoldsinds)
         test_sets.append(test_set)
-        print("val set", str(len(val_fold)))
-        print("train set", str(len(otherfoldsinds)))
+        print("val set", len(val_fold))
+        print("train set", len(otherfoldsinds))
 
 
 
     bestparamind, best_param_list, bestperf, all_predictions_not_need, losses_not_need = general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, 
                                                                                                 measure, runmethod, FLAGS, train_sets, val_sets)
-   
+
     #print("Test Set len", str(len(test_set)))
     #print("Outer Train Set len", str(len(outer_train_sets)))
     bestparam, best_param_list, bestperf, all_predictions, all_losses = general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, 
                                                                                                 measure, runmethod, FLAGS, train_sets, test_sets)
-    
+
     testperf = all_predictions[bestparamind]##pointer pos 
 
     logging("---FINAL RESULTS-----", FLAGS)
@@ -319,8 +319,8 @@ def general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, prfmeasure, run
     w = len(val_sets)
     h = len(paramset1) * len(paramset2) * len(paramset3)
 
-    all_predictions = [[0 for x in range(w)] for y in range(h)] 
-    all_losses = [[0 for x in range(w)] for y in range(h)] 
+    all_predictions = [[0 for _ in range(w)] for _ in range(h)]
+    all_losses = [[0 for _ in range(w)] for _ in range(h)]
     print(all_predictions)
 
     for foldind in range(len(val_sets)):
@@ -339,7 +339,7 @@ def general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, prfmeasure, run
         XT_train = XT[trcols]
 
         train_drugs, train_prots,  train_Y = prepare_interaction_pairs(XD, XT, Y, trrows, trcols)
-        
+
         terows = label_row_inds[valinds]
         tecols = label_col_inds[valinds]
         #print("terows", str(terows), str(len(terows)))
@@ -349,7 +349,7 @@ def general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, prfmeasure, run
 
 
         pointer = 0
-       
+
         for param1ind in range(len(paramset1)): #hidden neurons
             param1value = paramset1[param1ind]
             for param2ind in range(len(paramset2)): #learning rate
@@ -387,23 +387,22 @@ def general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, prfmeasure, run
     best_param_list = []
     ##Take average according to folds, then chooose best params
     pointer = 0
-    for param1ind in range(len(paramset1)):
-            for param2ind in range(len(paramset2)):
-                for param3ind in range(len(paramset3)):
-                
-                    avgperf = 0.
-                    for foldind in range(len(val_sets)):
-                        foldperf = all_predictions[pointer][foldind]
-                        avgperf += foldperf
-                    avgperf /= len(val_sets)
-                    #print(epoch, batchsz, avgperf)
-                    if avgperf > bestperf:
-                        bestperf = avgperf
-                        bestpointer = pointer
-                        best_param_list = [param1ind, param2ind, param3ind]
+    for param1ind, param2ind in product(range(len(paramset1)), range(len(paramset2))):
+        for param3ind in range(len(paramset3)):
 
-                    pointer +=1
-        
+            avgperf = 0.
+            for foldind in range(len(val_sets)):
+                foldperf = all_predictions[pointer][foldind]
+                avgperf += foldperf
+            avgperf /= len(val_sets)
+            #print(epoch, batchsz, avgperf)
+            if avgperf > bestperf:
+                bestperf = avgperf
+                bestpointer = pointer
+                best_param_list = [param1ind, param2ind, param3ind]
+
+            pointer +=1
+
     return  bestpointer, best_param_list, bestperf, all_predictions, all_losses
 
 
@@ -425,7 +424,7 @@ def cindex_score(y_true, y_pred):
    
 def plotLoss(history, batchind, epochind, param3ind, foldind):
 
-    figname = "b"+str(batchind) + "_e" + str(epochind) + "_" + str(param3ind) + "_"  + str( foldind) + "_" + str(time.time()) 
+    figname = f"b{str(batchind)}_e{str(epochind)}_{str(param3ind)}_{str(foldind)}_{str(time.time())}"
     plt.figure()
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -434,8 +433,19 @@ def plotLoss(history, batchind, epochind, param3ind, foldind):
     plt.xlabel('epoch')
 	#plt.legend(['trainloss', 'valloss', 'cindex', 'valcindex'], loc='upper left')
     plt.legend(['trainloss', 'valloss'], loc='upper left')
-    plt.savefig("figures/"+figname +".png" , dpi=None, facecolor='w', edgecolor='w', orientation='portrait', 
-                    papertype=None, format=None,transparent=False, bbox_inches=None, pad_inches=0.1,frameon=None)
+    plt.savefig(
+        f"figures/{figname}.png",
+        dpi=None,
+        facecolor='w',
+        edgecolor='w',
+        orientation='portrait',
+        papertype=None,
+        format=None,
+        transparent=False,
+        bbox_inches=None,
+        pad_inches=0.1,
+        frameon=None,
+    )
     plt.close()
 
 
@@ -447,8 +457,19 @@ def plotLoss(history, batchind, epochind, param3ind, foldind):
     plt.plot(history.history['cindex_score'])
     plt.plot(history.history['val_cindex_score'])
     plt.legend(['traincindex', 'valcindex'], loc='upper left')
-    plt.savefig("figures/"+figname + "_acc.png" , dpi=None, facecolor='w', edgecolor='w', orientation='portrait', 
-                            papertype=None, format=None,transparent=False, bbox_inches=None, pad_inches=0.1,frameon=None)
+    plt.savefig(
+        f"figures/{figname}_acc.png",
+        dpi=None,
+        facecolor='w',
+        edgecolor='w',
+        orientation='portrait',
+        papertype=None,
+        format=None,
+        transparent=False,
+        bbox_inches=None,
+        pad_inches=0.1,
+        frameon=None,
+    )
 
 
 
@@ -491,7 +512,7 @@ def experiment(FLAGS, perfmeasure, deepmethod, foldcount=6): #5-fold cross valid
                       smilen = FLAGS.max_smi_len,
                       need_shuffle = False )
     # set character set size
-    FLAGS.charseqset_size = dataset.charseqset_size 
+    FLAGS.charseqset_size = dataset.charseqset_size
     FLAGS.charsmiset_size = dataset.charsmiset_size 
 
     XD, XT, Y = dataset.parse_data(FLAGS)
@@ -517,7 +538,7 @@ def experiment(FLAGS, perfmeasure, deepmethod, foldcount=6): #5-fold cross valid
     S1_avgperf, S1_avgloss, S1_teststd = nfold_1_2_3_setting_sample(XD, XT, Y, label_row_inds, label_col_inds,
                                                                      perfmeasure, deepmethod, FLAGS, dataset)
 
-    logging("Setting " + str(FLAGS.problem_type), FLAGS)
+    logging(f"Setting {str(FLAGS.problem_type)}", FLAGS)
     logging("avg_perf = %.5f,  avg_mse = %.5f, std = %.5f" % 
             (S1_avgperf, S1_avgloss, S1_teststd), FLAGS)
 

@@ -7,17 +7,14 @@ def get_aupr(Y, P):
     Y = np.where(Y>0, 1, 0)
     Y = Y.ravel()
     P = P.ravel()
-    f = open("temp.txt", 'w')
-    for i in range(Y.shape[0]):
-        f.write("%f %d\n" %(P[i], Y[i]))
-    f.close()
-    f = open("foo.txt", 'w')
-    subprocess.call(["java", "-jar", "auc.jar", "temp.txt", "list"], stdout=f)
-    f.close()
-    f = open("foo.txt")
-    lines = f.readlines()
-    aucpr = float(lines[-2].split()[-1])
-    f.close()
+    with open("temp.txt", 'w') as f:
+        for i in range(Y.shape[0]):
+            f.write("%f %d\n" %(P[i], Y[i]))
+    with open("foo.txt", 'w') as f:
+        subprocess.call(["java", "-jar", "auc.jar", "temp.txt", "list"], stdout=f)
+    with open("foo.txt") as f:
+        lines = f.readlines()
+        aucpr = float(lines[-2].split()[-1])
     return aucpr
 
 
@@ -25,26 +22,23 @@ def get_aupr(Y, P):
 def get_cindex(Y, P):
     summ = 0
     pair = 0
-    
+
     for i in range(1, len(Y)):
         for j in range(0, i):
             if i is not j:
                 if(Y[i] > Y[j]):
                     pair +=1
                     summ +=  1* (P[i] > P[j]) + 0.5 * (P[i] == P[j])
-        
-            
-    if pair is not 0:
-        return summ/pair
-    else:
-        return 0
+
+
+    return summ/pair if pair is not 0 else 0
 
 
 def r_squared_error(y_obs,y_pred):
     y_obs = np.array(y_obs)
     y_pred = np.array(y_pred)
-    y_obs_mean = [np.mean(y_obs) for y in y_obs]
-    y_pred_mean = [np.mean(y_pred) for y in y_pred]
+    y_obs_mean = [np.mean(y_obs) for _ in y_obs]
+    y_pred_mean = [np.mean(y_pred) for _ in y_pred]
 
     mult = sum((y_pred - y_pred_mean) * (y_obs - y_obs_mean))
     mult = mult * mult
@@ -67,7 +61,7 @@ def squared_error_zero(y_obs,y_pred):
 
     y_obs = np.array(y_obs)
     y_pred = np.array(y_pred)
-    y_obs_mean = [np.mean(y_obs) for y in y_obs]
+    y_obs_mean = [np.mean(y_obs) for _ in y_obs]
     upp = sum((y_obs - (k*y_pred)) * (y_obs - (k* y_pred)))
     down= sum((y_obs - y_obs_mean)*(y_obs - y_obs_mean))
 

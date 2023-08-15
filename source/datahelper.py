@@ -126,43 +126,56 @@ class DataSet(object):
 
 
   def read_sets(self, FLAGS): ### fpath should be the dataset folder /kiba/ or /davis/
-    fpath = FLAGS.dataset_path
-    setting_no = FLAGS.problem_type
-    print("Reading %s start" % fpath)
+  	fpath = FLAGS.dataset_path
+  	setting_no = FLAGS.problem_type
+  	print(f"Reading {fpath} start")
 
-    test_fold = json.load(open(fpath + "folds/test_fold_setting" + str(setting_no)+".txt"))
-    train_folds = json.load(open(fpath + "folds/train_fold_setting" + str(setting_no)+".txt"))
-    
-    return test_fold, train_folds
+  	test_fold = json.load(
+  		open(f"{fpath}folds/test_fold_setting{str(setting_no)}.txt")
+  	)
+  	train_folds = json.load(
+  		open(f"{fpath}folds/train_fold_setting{str(setting_no)}.txt")
+  	)
+
+  	return test_fold, train_folds
 
   def parse_data(self, FLAGS,  with_label=True): 
-    fpath = FLAGS.dataset_path	
-    print("Read %s start" % fpath)
+  	fpath = FLAGS.dataset_path
+  	print(f"Read {fpath} start")
 
-    ligands = json.load(open(fpath+"ligands_can.txt"), object_pairs_hook=OrderedDict)
-    proteins = json.load(open(fpath+"proteins.txt"), object_pairs_hook=OrderedDict)
+  	ligands = json.load(
+  		open(f"{fpath}ligands_can.txt"), object_pairs_hook=OrderedDict
+  	)
+  	proteins = json.load(
+  		open(f"{fpath}proteins.txt"), object_pairs_hook=OrderedDict
+  	)
 
-    Y = pickle.load(open(fpath + "Y","rb"), encoding='latin1') ### TODO: read from raw
-    if FLAGS.is_log:
-        Y = -(np.log10(Y/(math.pow(10,9))))
+  	Y = pickle.load(open(f"{fpath}Y", "rb"), encoding='latin1')
+  	if FLAGS.is_log:
+  	    Y = -(np.log10(Y/(math.pow(10,9))))
 
-    XD = []
-    XT = []
+  	XD = []
+  	XT = []
 
-    if with_label:
-        for d in ligands.keys():
-            XD.append(label_smiles(ligands[d], self.SMILEN, self.charsmiset))
-
-        for t in proteins.keys():
-            XT.append(label_sequence(proteins[t], self.SEQLEN, self.charseqset))
-    else:
-        for d in ligands.keys():
-            XD.append(one_hot_smiles(ligands[d], self.SMILEN, self.charsmiset))
-
-        for t in proteins.keys():
-            XT.append(one_hot_sequence(proteins[t], self.SEQLEN, self.charseqset))
-  
-    return XD, XT, Y
+  	if with_label:
+  		XD.extend(
+  			label_smiles(ligands[d], self.SMILEN, self.charsmiset)
+  			for d in ligands.keys()
+  		)
+  		XT.extend(
+  			label_sequence(proteins[t], self.SEQLEN, self.charseqset)
+  			for t in proteins.keys()
+  		)
+  	else:
+  		XD.extend(
+  			one_hot_smiles(ligands[d], self.SMILEN, self.charsmiset)
+  			for d in ligands.keys()
+  		)
+  		XT.extend(
+  			one_hot_sequence(proteins[t], self.SEQLEN, self.charseqset)
+  			for t in proteins.keys()
+  		)
+  	return XD, XT, Y
 
 
 

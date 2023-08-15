@@ -18,7 +18,7 @@ def prepare_new_data(fpath, test=True):
     if  os.path.exists(fpath + AFF_FILE):
         Y = np.loadtxt(fpath + AFF_FILE)
 
-    pickle.dump(Y, open(fpath + "Y","wb"), protocol=pickle.HIGHEST_PROTOCOL)
+    pickle.dump(Y, open(f"{fpath}Y", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
     label_row_inds, label_col_inds = np.where(np.isnan(Y)==False)
 
     #json.dump(linepos, open(FLAGS.test_path  + "csv_pos_match.txt","w"))
@@ -26,12 +26,12 @@ def prepare_new_data(fpath, test=True):
     indic = sorted(indic, key=os.urandom)
 
 
-    if not os.path.exists(fpath + "folds/"):
-        os.makedirs(fpath + "folds/")
+    if not os.path.exists(f"{fpath}folds/"):
+        os.makedirs(f"{fpath}folds/")
     if test:
-        json.dump(indic, open(fpath + "folds/test_fold.txt","w"))
+        json.dump(indic, open(f"{fpath}folds/test_fold.txt", "w"))
     else:
-        json.dump(indic, open(fpath + "folds/train_fold.txt","w"))
+        json.dump(indic, open(f"{fpath}folds/train_fold.txt", "w"))
 
 
 def read_chemicals(datafolder):
@@ -47,7 +47,7 @@ def read_chemicals(datafolder):
             counter +=1
 
     print("%d number(s) of chemical(s)" % counter)
-    json.dump(chemicals, open(datafolder + 'ligands.txt', 'w'))
+    json.dump(chemicals, open(f'{datafolder}ligands.txt', 'w'))
 
     return chemicals
 
@@ -79,7 +79,7 @@ def read_proteins(datafolder):
             counter +=1
 
     print("%d number(s) of protein(s)" % counter)
-    json.dump(proteins, open(datafolder + 'proteins.txt', 'w'))
+    json.dump(proteins, open(f'{datafolder}proteins.txt', 'w'))
 
     return proteins
 

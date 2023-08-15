@@ -129,65 +129,79 @@ class DataSet(object):
 
 
   def read_sets(self, FLAGS): ### fpath should be the dataset folder /kiba/ or /davis/
-    print("Reading %s start" % FLAGS.train_path)
+  	print(f"Reading {FLAGS.train_path} start")
 
-    test_fold = json.load(open(FLAGS.test_path + "folds/test_fold.txt"))
-    train_folds = json.load(open(FLAGS.train_path + "folds/train_fold.txt"))
-    
-    return test_fold, train_folds
+  	test_fold = json.load(open(f"{FLAGS.test_path}folds/test_fold.txt"))
+  	train_folds = json.load(open(f"{FLAGS.train_path}folds/train_fold.txt"))
+
+  	return test_fold, train_folds
 
 
   def parse_train_test_data(self, FLAGS, with_label=True): 
-		
-    print("Read %s start" % FLAGS.train_path)
+  		
+  	print(f"Read {FLAGS.train_path} start")
 
-    tr_ligands =  json.load(open(FLAGS.train_path+"ligands_iso.txt"), object_pairs_hook=OrderedDict)
-    tr_proteins = json.load(open(FLAGS.train_path+"proteins.txt"), object_pairs_hook=OrderedDict)
+  	tr_ligands = json.load(
+  		open(f"{FLAGS.train_path}ligands_iso.txt"), object_pairs_hook=OrderedDict
+  	)
+  	tr_proteins = json.load(
+  		open(f"{FLAGS.train_path}proteins.txt"), object_pairs_hook=OrderedDict
+  	)
 
-    tr_Y = pickle.load(open(FLAGS.train_path + "Y","rb"), encoding='latin1') ### TODO: read from raw
-    if FLAGS.isLog:
-        tr_Y = -(np.log10(tr_Y/(math.pow(math.e,9))))
+  	tr_Y = pickle.load(open(f"{FLAGS.train_path}Y", "rb"), encoding='latin1')
+  	if FLAGS.isLog:
+  	    tr_Y = -(np.log10(tr_Y/(math.pow(math.e,9))))
 
-    print("Read %s start" % FLAGS.test_path)
-    te_ligands =  json.load(open(FLAGS.test_path+"ligands.txt"), object_pairs_hook=OrderedDict)
-    te_proteins = json.load(open(FLAGS.test_path+"proteins.txt"), object_pairs_hook=OrderedDict)
+  	print(f"Read {FLAGS.test_path} start")
+  	te_ligands = json.load(
+  		open(f"{FLAGS.test_path}ligands.txt"), object_pairs_hook=OrderedDict
+  	)
+  	te_proteins = json.load(
+  		open(f"{FLAGS.test_path}proteins.txt"), object_pairs_hook=OrderedDict
+  	)
 
-    te_Y = pickle.load(open(FLAGS.test_path + "Y","rb"), encoding='latin1') ### TODO: read from raw
-
-
-    tr_XD = []
-    tr_XT = []
-
-    te_XD = []
-    te_XT = []
-
-    if with_label:
-        for d in tr_ligands.keys():
-            tr_XD.append(label_smiles(tr_ligands[d], self.SMILEN, self.charsmiset))
-
-        for t in tr_proteins.keys():
-            tr_XT.append(label_sequence(tr_proteins[t], self.SEQLEN, self.charseqset))
-
-        for d in te_ligands.keys():
-            te_XD.append(label_smiles(te_ligands[d], self.SMILEN, self.charsmiset))
-
-        for t in te_proteins.keys():
-            te_XT.append(label_sequence(te_proteins[t], self.SEQLEN, self.charseqset))
-    else:
-        for d in tr_ligands.keys():
-            tr_XD.append(one_hot_smiles(tr_ligands[d], self.SMILEN, self.charsmiset))
-
-        for t in tr_proteins.keys():
-            tr_XT.append(one_hot_sequence(tr_proteins[t], self.SEQLEN, self.charseqset))
-
-        for d in te_ligands.keys():
-            te_XD.append(one_hot_smiles(te_ligands[d], self.SMILEN, self.charsmiset))
-
-        for t in te_proteins.keys():
-            te_XT.append(one_hot_sequence(te_proteins[t], self.SEQLEN, self.charseqset))
+  	te_Y = pickle.load(open(f"{FLAGS.test_path}Y", "rb"), encoding='latin1')
 
 
+  	tr_XD = []
+  	tr_XT = []
 
-  
-    return tr_XD, tr_XT, tr_Y, te_XD, te_XT, te_Y
+  	te_XD = []
+  	te_XT = []
+
+  	if with_label:
+  		tr_XD.extend(
+  			label_smiles(tr_ligands[d], self.SMILEN, self.charsmiset)
+  			for d in tr_ligands.keys()
+  		)
+  		tr_XT.extend(
+  			label_sequence(tr_proteins[t], self.SEQLEN, self.charseqset)
+  			for t in tr_proteins.keys()
+  		)
+  		te_XD.extend(
+  			label_smiles(te_ligands[d], self.SMILEN, self.charsmiset)
+  			for d in te_ligands.keys()
+  		)
+  		te_XT.extend(
+  			label_sequence(te_proteins[t], self.SEQLEN, self.charseqset)
+  			for t in te_proteins.keys()
+  		)
+  	else:
+  		tr_XD.extend(
+  			one_hot_smiles(tr_ligands[d], self.SMILEN, self.charsmiset)
+  			for d in tr_ligands.keys()
+  		)
+  		for t in tr_proteins.keys():
+  		    tr_XT.append(one_hot_sequence(tr_proteins[t], self.SEQLEN, self.charseqset))
+
+  		for d in te_ligands.keys():
+  		    te_XD.append(one_hot_smiles(te_ligands[d], self.SMILEN, self.charsmiset))
+
+  		for t in te_proteins.keys():
+  		    te_XT.append(one_hot_sequence(te_proteins[t], self.SEQLEN, self.charseqset))
+
+
+
+
+  	return tr_XD, tr_XT, tr_Y, te_XD, te_XT, te_Y
 
